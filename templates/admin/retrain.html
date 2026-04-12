@@ -1,0 +1,189 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Retrain – Admin{% endblock %}
+{% block page_title %}Model Retraining{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Retrain form ──────────────────────────────────────────────────────── -->
+  <div class="col-lg-5">
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Launch New Training Job</h6>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST" id="retrainForm">
+
+          <div class="mb-3">
+            <label class="form-label fw-medium">Base Architecture <span class="text-danger">*</span></label>
+            <select name="base_model" class="form-select">
+              {% for m in ['MobileNetV2','DenseNet121','EfficientNetB3','ResNet50V2','VGG16'] %}
+              <option value="{{ m }}" {% if m == defaults.base_model %}selected{% endif %}>{{ m }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Pre-trained backbone to use for transfer learning.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-medium">Dataset Path <span class="text-danger">*</span></label>
+            <input type="text" name="dataset_path" class="form-control font-monospace"
+                   placeholder="/path/to/dataset/" required>
+            <div class="form-text">Absolute path to a directory with class sub-folders
+              (e.g. <code>cataract/</code>, <code>glaucoma/</code>, …).</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-medium">Output Model Name</label>
+            <div class="input-group">
+              <input type="text" name="output_name" class="form-control" value="retrained_model" placeholder="my_model">
+              <span class="input-group-text">.h5</span>
+            </div>
+            <div class="form-text">Saved to the project models directory.</div>
+          </div>
+
+          <hr>
+
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label fw-medium">Epochs</label>
+              <input type="number" name="epochs" class="form-control" value="{{ defaults.epochs }}" min="1" max="100">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Batch Size</label>
+              <input type="number" name="batch_size" class="form-control" value="{{ defaults.batch_size }}" min="8" max="128">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Learning Rate</label>
+              <input type="text" name="lr" class="form-control" value="{{ defaults.lr }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Image Size (px)</label>
+              <input type="number" name="image_size" class="form-control" value="{{ defaults.image_size }}" min="96" max="512">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Dropout Rate</label>
+              <input type="number" name="dropout" class="form-control" value="{{ defaults.dropout }}" min="0" max="0.9" step="0.05">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Dense Units</label>
+              <input type="number" name="dense_units" class="form-control" value="{{ defaults.dense_units }}" min="64" max="1024">
+            </div>
+          </div>
+
+          <div class="alert alert-warning py-2 mt-3 small">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Training runs in the background. Monitor progress below. The server must stay running.
+          </div>
+
+          <button type="submit" class="btn btn-success w-100 mt-2">
+            <i class="bi bi-play-fill me-2"></i>Start Training Job
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Jobs list ─────────────────────────────────────────────────────────── -->
+  <div class="col-lg-7">
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-list-task me-2"></i>Training Jobs</h6>
+      </div>
+      <div class="admin-card-body p-0">
+        {% if jobs %}
+        <div class="accordion accordion-flush" id="jobsAccordion">
+          {% for j in jobs %}
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button {% if not loop.first %}collapsed{% endif %} py-3"
+                      type="button" data-bs-toggle="collapse"
+                      data-bs-target="#job{{ j.id }}">
+                <div class="d-flex align-items-center gap-3 w-100">
+                  <span class="fw-bold">#{{ j.id }}</span>
+                  <span class="text-muted small">{{ j.config.get('base_model','–') }} · {{ j.config.get('epochs','–') }} epochs</span>
+                  <span class="ms-auto me-3">
+                    {% if j.status == 'done' %}<span class="badge bg-success">Done</span>
+                    {% elif j.status == 'running' %}<span class="badge bg-warning text-dark">Running</span>
+                    {% elif j.status == 'failed' %}<span class="badge bg-danger">Failed</span>
+                    {% else %}<span class="badge bg-secondary">Queued</span>{% endif %}
+                  </span>
+                </div>
+              </button>
+            </h2>
+            <div id="job{{ j.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}">
+              <div class="accordion-body">
+                <div class="row g-2 mb-3">
+                  <div class="col-6 col-md-4"><small class="text-muted">Dataset</small><br>
+                    <code class="small">{{ j.config.get('dataset_path','–') }}</code></div>
+                  <div class="col-6 col-md-4"><small class="text-muted">Output</small><br>
+                    <code class="small">{{ j.config.get('output_path','–') | replace(j.config.get('output_path','')[:j.config.get('output_path','').rfind('/')+1], '') }}</code></div>
+                  <div class="col-6 col-md-4"><small class="text-muted">LR / Dropout</small><br>
+                    <span class="small">{{ j.config.get('lr','–') }} / {{ j.config.get('dropout','–') }}</span></div>
+                </div>
+
+                <!-- Log output -->
+                <div class="retrain-log" id="logBox{{ j.id }}">{{ j.log_text or '(No logs yet)' }}</div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2 mt-3 flex-wrap">
+                  {% if j.status in ('running','queued') %}
+                  <button class="btn btn-sm btn-outline-primary"
+                          onclick="pollLog({{ j.id }})">
+                    <i class="bi bi-arrow-repeat me-1"></i>Refresh Log
+                  </button>
+                  {% endif %}
+                  {% if j.status == 'done' %}
+                  <form method="POST" action="{{ url_for('admin_retrain_add_model', job_id=j.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-success">
+                      <i class="bi bi-plus-circle me-1"></i>Add to Ensemble
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-hourglass fs-1 d-block mb-2"></i>
+          No training jobs yet. Launch one using the form on the left.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function pollLog(jobId) {
+  const box = document.getElementById('logBox' + jobId);
+  if (!box) return;
+  try {
+    const r = await fetch(`/admin/retrain/${jobId}/log`);
+    const d = await r.json();
+    box.textContent = d.log || '(No logs yet)';
+    box.scrollTop   = box.scrollHeight;
+  } catch(e) { console.warn(e); }
+}
+
+// Auto-poll running jobs every 3s
+document.querySelectorAll('[id^="logBox"]').forEach(box => {
+  const jobId = box.id.replace('logBox','');
+  // Only auto-poll if the job is running (check badge)
+  const header = document.querySelector(`#job${jobId}`);
+  if (header && header.textContent.includes('Running')) {
+    const iv = setInterval(async () => {
+      const r = await fetch(`/admin/retrain/${jobId}/log`).then(r=>r.json());
+      box.textContent = r.log || '';
+      box.scrollTop   = box.scrollHeight;
+      if (r.status === 'done' || r.status === 'failed') clearInterval(iv);
+    }, 3000);
+  }
+});
+</script>
+{% endblock %}

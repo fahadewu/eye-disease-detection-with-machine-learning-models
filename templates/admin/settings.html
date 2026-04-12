@@ -1,0 +1,142 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Settings – Admin{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── API & prediction settings ────────────────────────────────────────── -->
+  <div class="col-lg-7">
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-sliders me-2"></i>Prediction & API Settings</h6>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="api_keys">
+
+          <h6 class="settings-section-title">Confidence & Fallback</h6>
+          <div class="mb-3">
+            <label class="form-label fw-medium">Confidence Threshold</label>
+            <div class="input-group">
+              <input type="number" name="confidence_threshold" class="form-control"
+                     value="{{ settings.confidence_threshold }}" min="0.1" max="0.99" step="0.05">
+              <span class="input-group-text">0–1</span>
+            </div>
+            <div class="form-text">Predictions below this confidence will trigger the fallback API (default: 0.65).</div>
+          </div>
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="fallback_enabled"
+                     id="fbToggle" {% if settings.fallback_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-medium" for="fbToggle">Enable Fallback API</label>
+            </div>
+            <div class="form-text">When enabled, low-confidence results are re-validated via an external API.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-medium">Fallback Priority</label>
+            <select name="fallback_priority" class="form-select">
+              <option value="huggingface" {% if settings.fallback_priority=='huggingface' %}selected{% endif %}>Hugging Face → Gemini</option>
+              <option value="gemini" {% if settings.fallback_priority=='gemini' %}selected{% endif %}>Gemini → Hugging Face</option>
+            </select>
+          </div>
+
+          <h6 class="settings-section-title">API Keys</h6>
+          <div class="mb-3">
+            <label class="form-label fw-medium">Hugging Face API Key</label>
+            <input type="text" name="hf_api_key" class="form-control font-monospace"
+                   value="{{ settings.hf_api_key }}" placeholder="hf_xxxxxxxxxxxx">
+            <div class="form-text">
+              Free tier works without a key for public models.
+              Get a key at <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co</a>.
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-medium">Google Gemini API Key</label>
+            <input type="text" name="gemini_api_key" class="form-control font-monospace"
+                   value="{{ settings.gemini_api_key }}" placeholder="AIza...">
+            <div class="form-text">
+              Free tier: 1500 requests/day.
+              Get a key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>.
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-2"></i>Save Settings
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Auth settings ─────────────────────────────────────────────────────── -->
+  <div class="col-lg-5">
+
+    <!-- Change password -->
+    <div class="admin-card mb-4">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-lock me-2"></i>Change Password</h6>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="change_password">
+          <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input type="password" name="current_password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <input type="password" name="new_password" class="form-control" required minlength="6">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" name="confirm_password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-warning w-100">
+            <i class="bi bi-key me-2"></i>Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Change username -->
+    <div class="admin-card mb-4">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-person me-2"></i>Change Username</h6>
+      </div>
+      <div class="admin-card-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="change_username">
+          <div class="mb-3">
+            <label class="form-label">New Username</label>
+            <input type="text" name="new_username" class="form-control"
+                   value="{{ settings.admin_username }}" required>
+          </div>
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-check me-2"></i>Update Username
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- System info -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>System Info</h6>
+      </div>
+      <div class="admin-card-body">
+        <table class="table table-sm mb-0">
+          <tr><th>Project</th><td>Eye Disease Detection</td></tr>
+          <tr><th>University</th><td>East West University</td></tr>
+          <tr><th>Version</th><td>1.0.0</td></tr>
+          <tr><th>Framework</th><td>Flask + TensorFlow</td></tr>
+        </table>
+        <a href="{{ url_for('health') }}" target="_blank" class="btn btn-sm btn-outline-secondary mt-3 w-100">
+          <i class="bi bi-activity me-1"></i>Health Check API
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

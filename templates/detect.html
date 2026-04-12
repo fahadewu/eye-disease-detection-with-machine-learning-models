@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+{% block title %}Detect – {{ project_title }}{% endblock %}
+
+{% block content %}
+<section class="detect-section">
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="page-header text-center mb-5">
+      <span class="section-badge">AI Analysis</span>
+      <h2 class="section-title">Eye Disease Detection</h2>
+      <p class="section-desc">Upload a fundus photograph or use your camera for live capture</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+
+      <!-- ── Input panel ──────────────────────────────────────────────────── -->
+      <div class="col-lg-6">
+        <div class="detect-card">
+          <!-- Tab switcher -->
+          <ul class="nav nav-pills detect-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="upload-tab" data-bs-toggle="pill"
+                      data-bs-target="#upload-pane" type="button">
+                <i class="bi bi-upload me-2"></i>Upload Image
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="camera-tab" data-bs-toggle="pill"
+                      data-bs-target="#camera-pane" type="button" id="openCameraBtn">
+                <i class="bi bi-camera me-2"></i>Live Camera
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <!-- Upload tab -->
+            <div class="tab-pane fade show active" id="upload-pane" role="tabpanel">
+              <div class="upload-zone" id="uploadZone">
+                <input type="file" id="fileInput" accept="image/*" class="d-none">
+                <div class="upload-placeholder" id="uploadPlaceholder">
+                  <i class="bi bi-cloud-upload"></i>
+                  <h5>Drop image here</h5>
+                  <p>or click to browse</p>
+                  <span class="upload-formats">PNG · JPG · JPEG · BMP · TIFF · WEBP</span>
+                </div>
+                <img id="previewImg" class="upload-preview d-none" alt="Preview">
+              </div>
+              <button class="btn btn-primary w-100 mt-3 btn-analyse" id="analyseUploadBtn" disabled>
+                <i class="bi bi-cpu me-2"></i>Analyse Image
+              </button>
+            </div>
+
+            <!-- Camera tab -->
+            <div class="tab-pane fade" id="camera-pane" role="tabpanel">
+              <div class="camera-container" id="cameraContainer">
+                <video id="cameraVideo" class="camera-video" autoplay playsinline></video>
+                <canvas id="cameraCanvas" class="d-none"></canvas>
+                <div class="camera-overlay" id="cameraOverlay">
+                  <i class="bi bi-camera-fill"></i>
+                  <p>Camera access required</p>
+                  <button class="btn btn-primary btn-sm mt-2" id="startCameraBtn">
+                    <i class="bi bi-play me-1"></i>Enable Camera
+                  </button>
+                </div>
+                <div class="camera-frame" id="cameraFrame" style="display:none">
+                  <div class="camera-crosshair"></div>
+                </div>
+              </div>
+              <div class="d-grid gap-2 mt-3">
+                <button class="btn btn-secondary" id="captureBtn" disabled>
+                  <i class="bi bi-camera me-2"></i>Capture Frame
+                </button>
+                <div id="capturedPreviewWrap" class="d-none">
+                  <img id="capturedPreview" class="upload-preview mt-2" alt="Captured">
+                  <button class="btn btn-primary w-100 mt-2 btn-analyse" id="analyseCaptureBtn">
+                    <i class="bi bi-cpu me-2"></i>Analyse Captured Image
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer-box mt-3">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          <strong>Medical Disclaimer:</strong> This tool is for research and educational purposes only.
+          It does not replace professional ophthalmological diagnosis. Always consult a certified
+          eye care professional for medical advice.
+        </div>
+      </div>
+
+      <!-- ── Result panel ─────────────────────────────────────────────────── -->
+      <div class="col-lg-6">
+        <div class="result-panel" id="resultPanel">
+
+          <!-- Idle state -->
+          <div id="resultIdle" class="result-idle">
+            <i class="bi bi-eye result-idle-icon"></i>
+            <h5>Awaiting Analysis</h5>
+            <p>Upload or capture an eye image to see the prediction results here.</p>
+            <div class="mt-3">
+              <div class="tip-item"><i class="bi bi-lightbulb me-2 text-warning"></i>Use high-quality fundus photographs</div>
+              <div class="tip-item"><i class="bi bi-lightbulb me-2 text-warning"></i>Ensure good lighting and focus</div>
+              <div class="tip-item"><i class="bi bi-lightbulb me-2 text-warning"></i>Centre the eye/retina in frame</div>
+            </div>
+          </div>
+
+          <!-- Loading state -->
+          <div id="resultLoading" class="result-loading d-none">
+            <div class="scan-animation">
+              <div class="scan-circle"></div>
+              <div class="scan-pulse"></div>
+              <i class="bi bi-eye-fill scan-eye"></i>
+            </div>
+            <h5 class="mt-3">Analysing Image…</h5>
+            <p class="text-muted small">Running CLAHE preprocessing and AI inference</p>
+            <div class="loading-steps" id="loadingSteps">
+              <div class="loading-step active" id="step1"><i class="bi bi-check-circle"></i> Image loaded</div>
+              <div class="loading-step" id="step2"><i class="bi bi-hourglass-split"></i> Preprocessing (CLAHE)</div>
+              <div class="loading-step" id="step3"><i class="bi bi-hourglass-split"></i> Running models</div>
+              <div class="loading-step" id="step4"><i class="bi bi-hourglass-split"></i> Ensemble aggregation</div>
+            </div>
+          </div>
+
+          <!-- Result state -->
+          <div id="resultContent" class="d-none">
+            <!-- Prediction badge -->
+            <div class="result-badge-wrap text-center mb-4">
+              <div class="result-disease-icon" id="resultIcon"></div>
+              <div class="result-label" id="resultLabel">---</div>
+              <div class="result-confidence-bar-wrap">
+                <div class="d-flex justify-content-between mb-1">
+                  <small class="text-muted">Confidence</small>
+                  <small class="fw-bold" id="resultConfPct">0%</small>
+                </div>
+                <div class="progress result-conf-progress">
+                  <div class="progress-bar" id="resultConfBar" role="progressbar"></div>
+                </div>
+              </div>
+              <div class="result-method-badge" id="resultMethod"></div>
+            </div>
+
+            <!-- Probability chart -->
+            <div class="mb-4">
+              <h6 class="fw-semibold mb-2">Probability Distribution</h6>
+              <canvas id="probChart" height="160"></canvas>
+            </div>
+
+            <!-- Models used -->
+            <div class="models-used-wrap mb-3" id="modelsUsedWrap"></div>
+
+            <!-- Fallback note -->
+            <div class="fallback-note d-none" id="fallbackNote"></div>
+
+            <!-- Disease info -->
+            <div class="disease-info-panel" id="diseaseInfo"></div>
+
+            <!-- Actions -->
+            <div class="d-flex gap-2 mt-4">
+              <button class="btn btn-outline-secondary flex-fill" id="resetBtn">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>New Scan
+              </button>
+              <button class="btn btn-primary flex-fill" id="downloadReportBtn">
+                <i class="bi bi-download me-1"></i>Download Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Error state -->
+          <div id="resultError" class="result-error d-none">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+            <h5 class="mt-3">Analysis Failed</h5>
+            <p id="errorMessage" class="text-muted"></p>
+            <button class="btn btn-outline-danger mt-2" id="errorRetryBtn">
+              <i class="bi bi-arrow-repeat me-1"></i>Try Again
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Hidden print report div -->
+<div id="printReport" class="d-none"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Chart.js global defaults ───────────────────────────────────────────────
+Chart.defaults.font.family = 'Inter, system-ui';
+Chart.defaults.color = '#495057';
+
+const CLASS_COLORS = {{ class_colors | tojson }};
+let probChartInstance = null;
+let currentResult     = null;
+let capturedDataUrl   = null;
+let currentFile       = null;
+
+// ── Upload zone ────────────────────────────────────────────────────────────
+const uploadZone   = document.getElementById('uploadZone');
+const fileInput    = document.getElementById('fileInput');
+const previewImg   = document.getElementById('previewImg');
+const placeholder  = document.getElementById('uploadPlaceholder');
+const analyseUpBtn = document.getElementById('analyseUploadBtn');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) setUploadFile(f);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setUploadFile(fileInput.files[0]);
+});
+
+function setUploadFile(file) {
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src = e.target.result;
+    previewImg.classList.remove('d-none');
+    placeholder.classList.add('d-none');
+    analyseUpBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+analyseUpBtn.addEventListener('click', () => {
+  if (!currentFile) return;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  runAnalysis(fd);
+});
+
+// ── Camera ─────────────────────────────────────────────────────────────────
+const video         = document.getElementById('cameraVideo');
+const canvas        = document.getElementById('cameraCanvas');
+const cameraOverlay = document.getElementById('cameraOverlay');
+const cameraFrame   = document.getElementById('cameraFrame');
+const captureBtn    = document.getElementById('captureBtn');
+const startCamBtn   = document.getElementById('startCameraBtn');
+const capturedWrap  = document.getElementById('capturedPreviewWrap');
+const capturedPrev  = document.getElementById('capturedPreview');
+const analyseCapBtn = document.getElementById('analyseCaptureBtn');
+
+startCamBtn.addEventListener('click', startCamera);
+document.getElementById('camera-tab').addEventListener('click', () => {});
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' } });
+    video.srcObject = stream;
+    cameraOverlay.style.display = 'none';
+    cameraFrame.style.display   = 'flex';
+    captureBtn.disabled = false;
+  } catch(e) {
+    cameraOverlay.innerHTML = `<i class="bi bi-x-circle text-danger fs-1"></i>
+      <p class="text-danger mt-2">Camera access denied.<br>Please allow camera permission.</p>`;
+  }
+}
+
+captureBtn.addEventListener('click', () => {
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  capturedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+  capturedPrev.src = capturedDataUrl;
+  capturedWrap.classList.remove('d-none');
+});
+
+analyseCapBtn.addEventListener('click', () => {
+  if (!capturedDataUrl) return;
+  const fd = new FormData();
+  fd.append('image', capturedDataUrl);
+  runAnalysis(fd);
+});
+
+// ── Core analysis ──────────────────────────────────────────────────────────
+function showState(state) {
+  ['resultIdle','resultLoading','resultContent','resultError']
+    .forEach(id => document.getElementById(id).classList.add('d-none'));
+  document.getElementById(state).classList.remove('d-none');
+}
+
+let stepTimer = null;
+function animateSteps() {
+  const steps = ['step1','step2','step3','step4'];
+  let i = 1;
+  steps[0] && document.getElementById(steps[0]).classList.add('done');
+  stepTimer = setInterval(() => {
+    if (i < steps.length) {
+      const el = document.getElementById(steps[i]);
+      if (el) { el.classList.add('active'); el.querySelector('i').className = 'bi bi-hourglass-split'; }
+      if (i > 0) {
+        const prev = document.getElementById(steps[i-1]);
+        if (prev) { prev.classList.add('done'); prev.querySelector('i').className = 'bi bi-check-circle-fill'; }
+      }
+      i++;
+    } else {
+      clearInterval(stepTimer);
+    }
+  }, 700);
+}
+
+async function runAnalysis(formData) {
+  showState('resultLoading');
+  // Reset loading steps
+  ['step1','step2','step3','step4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active','done'); el.querySelector('i').className = 'bi bi-hourglass-split'; }
+  });
+  animateSteps();
+
+  try {
+    const resp = await fetch('/api/predict', { method:'POST', body: formData });
+    const data = await resp.json();
+    clearInterval(stepTimer);
+
+    if (!resp.ok || data.error) {
+      document.getElementById('errorMessage').textContent = data.error || 'Unknown error occurred.';
+      showState('resultError');
+      return;
+    }
+
+    currentResult = data;
+    renderResult(data);
+    showState('resultContent');
+  } catch(e) {
+    clearInterval(stepTimer);
+    document.getElementById('errorMessage').textContent = 'Network error. Please try again.';
+    showState('resultError');
+  }
+}
+
+function renderResult(d) {
+  // Disease icon + label
+  const iconMap = {
+    'Cataract':            'bi-circle-half',
+    'Diabetic Retinopathy':'bi-droplet-fill',
+    'Glaucoma':            'bi-bullseye',
+    'Normal':              'bi-check-circle-fill',
+  };
+  const icon = document.getElementById('resultIcon');
+  icon.innerHTML  = `<i class="bi ${iconMap[d.prediction] || 'bi-eye-fill'}"></i>`;
+  icon.style.background = hexToRgba(d.color, 0.12);
+  icon.style.color      = d.color;
+
+  document.getElementById('resultLabel').textContent    = d.prediction;
+  document.getElementById('resultLabel').style.color    = d.color;
+  const pct = Math.round(d.confidence * 100);
+  document.getElementById('resultConfPct').textContent  = pct + '%';
+  const bar = document.getElementById('resultConfBar');
+  bar.style.width      = pct + '%';
+  bar.style.background = d.color;
+
+  // Method badge
+  const methodMap = {
+    'ensemble':          {text:'Ensemble AI',        cls:'badge-ensemble'},
+    'fallback_hf':       {text:'Hugging Face API',   cls:'badge-fallback'},
+    'fallback_gemini':   {text:'Gemini Vision API',  cls:'badge-fallback'},
+    'fallback_combined': {text:'AI + API Validated', cls:'badge-combined'},
+    'fallback_only':     {text:'API Fallback',       cls:'badge-fallback'},
+  };
+  const m = methodMap[d.method] || {text: d.method, cls:'badge-ensemble'};
+  document.getElementById('resultMethod').innerHTML =
+    `<span class="method-badge ${m.cls}">${m.text}</span>`;
+
+  // Probability chart
+  if (probChartInstance) probChartInstance.destroy();
+  const labels = d.probs.map(p => p.label);
+  const values = d.probs.map(p => +(p.prob * 100).toFixed(1));
+  const colors = labels.map(l => CLASS_COLORS[l] || '#6c757d');
+  probChartInstance = new Chart(document.getElementById('probChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Probability (%)',
+        data: values,
+        backgroundColor: colors.map(c => hexToRgba(c, 0.75)),
+        borderColor: colors,
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero:true, max:100, ticks:{ callback: v => v+'%' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Models used
+  if (d.models_used && d.models_used.length) {
+    document.getElementById('modelsUsedWrap').innerHTML =
+      `<div class="models-used-label">Models used:</div>` +
+      d.models_used.map(m => `<span class="model-chip">${m}</span>`).join('');
+  }
+
+  // Fallback note
+  if (d.fallback_used && d.fallback_note) {
+    const fb = document.getElementById('fallbackNote');
+    fb.innerHTML = `<i class="bi bi-info-circle me-2"></i>${d.fallback_note}`;
+    fb.classList.remove('d-none');
+  }
+
+  // Disease info
+  const urgencyMap = { low:'success', moderate:'warning', high:'danger' };
+  const urgCls = urgencyMap[d.urgency] || 'warning';
+  const syms = (d.symptoms || []).map(s => `<li>${s}</li>`).join('');
+  document.getElementById('diseaseInfo').innerHTML = `
+    <div class="disease-info-header" style="border-left:4px solid ${d.color}">
+      <div class="d-flex justify-content-between align-items-start">
+        <h6 class="mb-1 fw-bold">Clinical Information</h6>
+        <span class="badge bg-${urgCls}">${d.urgency.charAt(0).toUpperCase()+d.urgency.slice(1)} Urgency</span>
+      </div>
+      <p class="text-muted small mb-0">${d.description || ''}</p>
+    </div>
+    ${syms ? `<div class="disease-info-section"><strong>Symptoms:</strong><ul class="symptoms-list">${syms}</ul></div>` : ''}
+    <div class="disease-info-section">
+      <strong>Management:</strong>
+      <p class="mb-0 text-muted small mt-1">${d.treatment || ''}</p>
+    </div>
+    <div class="disclaimer-inline mt-2">
+      <i class="bi bi-exclamation-circle me-1"></i>
+      Consult a certified ophthalmologist for a proper clinical diagnosis.
+    </div>`;
+}
+
+// ── Reset & download ───────────────────────────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('errorRetryBtn').addEventListener('click', reset);
+function reset() {
+  currentResult   = null;
+  capturedDataUrl = null;
+  currentFile     = null;
+  fileInput.value = '';
+  previewImg.classList.add('d-none');
+  placeholder.classList.remove('d-none');
+  analyseUpBtn.disabled = true;
+  document.getElementById('capturedPreviewWrap').classList.add('d-none');
+  document.getElementById('fallbackNote').classList.add('d-none');
+  if (probChartInstance) { probChartInstance.destroy(); probChartInstance = null; }
+  showState('resultIdle');
+}
+
+document.getElementById('downloadReportBtn').addEventListener('click', downloadReport);
+function downloadReport() {
+  if (!currentResult) return;
+  const d = currentResult;
+  const timestamp = new Date().toLocaleString();
+  const probRows = d.probs.map(p =>
+    `${p.label.padEnd(25)} ${(p.prob*100).toFixed(1)}%`
+  ).join('\n');
+  const report = `
+Eye Disease Detection Using Machine Learning Models – Report
+============================================
+Generated: ${timestamp}
+University: East West University, Dept. of CSE
+
+ANALYSIS RESULT
+───────────────
+Diagnosis:   ${d.prediction}
+Confidence:  ${Math.round(d.confidence*100)}%
+Method:      ${d.method}
+Fallback:    ${d.fallback_used ? 'Yes – ' + d.fallback_note : 'No'}
+
+PROBABILITY BREAKDOWN
+─────────────────────
+${probRows}
+
+MODELS USED
+───────────
+${(d.models_used||[]).join(', ')}
+
+CLINICAL INFORMATION
+────────────────────
+Description: ${d.description}
+Urgency:     ${d.urgency}
+Treatment:   ${d.treatment}
+
+Symptoms:
+${(d.symptoms||[]).map(s=>'  • '+s).join('\n')}
+
+DISCLAIMER
+──────────
+This report is generated by an AI model for educational and research purposes only.
+It does not constitute medical advice. Please consult a certified ophthalmologist.
+
+──── Eye Disease Detection Using Machine Learning Models · East West University ────
+  `.trim();
+  const blob = new Blob([report], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `EyeDisease_Report_${Date.now()}.txt`;
+  a.click();
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+</script>
+{% endblock %}

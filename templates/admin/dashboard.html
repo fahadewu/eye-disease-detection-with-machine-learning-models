@@ -1,0 +1,222 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Dashboard – Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Stat cards ───────────────────────────────────────────────────────── -->
+  <div class="col-6 col-xl-3">
+    <div class="admin-stat-card">
+      <div class="stat-card-icon bg-primary-soft"><i class="bi bi-graph-up text-primary"></i></div>
+      <div class="stat-card-val">{{ stats.total }}</div>
+      <div class="stat-card-lbl">Total Predictions</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="admin-stat-card">
+      <div class="stat-card-icon bg-success-soft"><i class="bi bi-cpu text-success"></i></div>
+      <div class="stat-card-val">{{ models|length }}</div>
+      <div class="stat-card-lbl">Registered Models</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="admin-stat-card">
+      <div class="stat-card-icon bg-warning-soft"><i class="bi bi-cloud text-warning"></i></div>
+      <div class="stat-card-val">{{ stats.fallback }}</div>
+      <div class="stat-card-lbl">Fallback API Used</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="admin-stat-card">
+      <div class="stat-card-icon bg-info-soft"><i class="bi bi-calendar-check text-info"></i></div>
+      <div class="stat-card-val">
+        {{ stats.daily[0].n if stats.daily else 0 }}
+      </div>
+      <div class="stat-card-lbl">Predictions Today</div>
+    </div>
+  </div>
+
+  <!-- ── Charts row ───────────────────────────────────────────────────────── -->
+  <div class="col-lg-5">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <h6 class="mb-0">Predictions by Class</h6>
+      </div>
+      <div class="admin-card-body d-flex justify-content-center align-items-center">
+        {% if stats.by_class %}
+        <canvas id="classDonut" height="260"></canvas>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-bar-chart fs-1 d-block mb-2"></i>No predictions yet
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="admin-card h-100">
+      <div class="admin-card-header">
+        <h6 class="mb-0">Daily Predictions (last 14 days)</h6>
+      </div>
+      <div class="admin-card-body">
+        {% if stats.daily %}
+        <canvas id="dailyLine" height="220"></canvas>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-calendar fs-1 d-block mb-2"></i>No data yet
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Models status ────────────────────────────────────────────────────── -->
+  <div class="col-lg-6">
+    <div class="admin-card">
+      <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Model Status</h6>
+        <a href="{{ url_for('admin_models') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+      </div>
+      <div class="admin-card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Model</th><th>Status</th><th>File</th></tr>
+          </thead>
+          <tbody>
+            {% for key, m in models.items() %}
+            <tr>
+              <td class="fw-medium">{{ m.display_name }}</td>
+              <td>
+                {% if m.enabled %}
+                  <span class="badge bg-success-soft text-success"><i class="bi bi-check-circle me-1"></i>Enabled</span>
+                {% else %}
+                  <span class="badge bg-danger-soft text-danger"><i class="bi bi-x-circle me-1"></i>Disabled</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ m.filename }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent retrain jobs ───────────────────────────────────────────────── -->
+  <div class="col-lg-6">
+    <div class="admin-card">
+      <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Recent Retrain Jobs</h6>
+        <a href="{{ url_for('admin_retrain') }}" class="btn btn-sm btn-outline-primary">Retrain</a>
+      </div>
+      <div class="admin-card-body p-0">
+        {% if jobs %}
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>#</th><th>Model</th><th>Status</th><th>Created</th></tr>
+          </thead>
+          <tbody>
+            {% for j in jobs %}
+            <tr>
+              <td class="text-muted small">#{{ j.id }}</td>
+              <td class="small">{{ j.config.get('base_model','–') }}</td>
+              <td>
+                {% if j.status == 'done' %}<span class="badge bg-success-soft text-success">Done</span>
+                {% elif j.status == 'running' %}<span class="badge bg-warning-soft text-warning">Running</span>
+                {% elif j.status == 'failed' %}<span class="badge bg-danger-soft text-danger">Failed</span>
+                {% else %}<span class="badge bg-secondary-subtle text-secondary">Queued</span>{% endif %}
+              </td>
+              <td class="text-muted small">{{ j.created_at[:16] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center text-muted py-4 small">No retrain jobs yet</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Quick actions ────────────────────────────────────────────────────── -->
+  <div class="col-12">
+    <div class="admin-card">
+      <div class="admin-card-header"><h6 class="mb-0">Quick Actions</h6></div>
+      <div class="admin-card-body d-flex flex-wrap gap-3">
+        <a href="{{ url_for('detect') }}" class="btn btn-primary" target="_blank">
+          <i class="bi bi-eye me-2"></i>Open Detector
+        </a>
+        <a href="{{ url_for('admin_predictions') }}" class="btn btn-outline-primary">
+          <i class="bi bi-clock-history me-2"></i>View All Predictions
+        </a>
+        <a href="{{ url_for('admin_models') }}" class="btn btn-outline-secondary">
+          <i class="bi bi-cpu me-2"></i>Manage Models
+        </a>
+        <a href="{{ url_for('admin_retrain') }}" class="btn btn-outline-success">
+          <i class="bi bi-arrow-repeat me-2"></i>Start Retraining
+        </a>
+        <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-warning">
+          <i class="bi bi-gear me-2"></i>Settings
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+{% if stats.by_class %}
+const classByCls = {{ stats.by_class | tojson }};
+const clrMap = {'Cataract':'#f39c12','Diabetic Retinopathy':'#e74c3c','Glaucoma':'#9b59b6','Normal':'#27ae60'};
+new Chart(document.getElementById('classDonut'), {
+  type: 'doughnut',
+  data: {
+    labels: classByCls.map(c => c.prediction),
+    datasets: [{
+      data: classByCls.map(c => c.n),
+      backgroundColor: classByCls.map(c => clrMap[c.prediction]||'#6c757d'),
+      borderWidth: 2,
+      borderColor: '#fff',
+    }]
+  },
+  options: {
+    cutout: '65%',
+    plugins: {
+      legend: { position: 'right', labels: { font: {size:12} } }
+    }
+  }
+});
+{% endif %}
+
+{% if stats.daily %}
+const dailyData = {{ stats.daily | tojson }}.reverse();
+new Chart(document.getElementById('dailyLine'), {
+  type: 'line',
+  data: {
+    labels: dailyData.map(d => d.day),
+    datasets: [{
+      label: 'Predictions',
+      data: dailyData.map(d => d.n),
+      borderColor: '#0d6efd',
+      backgroundColor: 'rgba(13,110,253,0.08)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#0d6efd',
+      pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: {display:false} },
+    scales: { y: { beginAtZero:true, ticks:{stepSize:1} } }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

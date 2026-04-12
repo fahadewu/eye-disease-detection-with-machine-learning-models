@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}{{ project_title }} – AI-Powered Eye Disease Detection{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="hero-bg-pattern"></div>
+  <div class="container position-relative">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-6">
+        <div class="badge-pill mb-3">
+          <i class="bi bi-cpu me-2"></i>Eye Disease Detection with AI
+        </div>
+        <h1 class="hero-title">
+          Detect Eye Diseases<br>
+          <span class="text-gradient">With Machine Learning Models</span>
+        </h1>
+        <p class="hero-desc">
+          Upload a fundus (retinal) photograph or scan directly with your camera.
+          Our ensemble of deep learning models — DenseNet121, MobileNetV2 and more —
+          analyse the image in seconds to detect
+          <strong>Cataract</strong>, <strong>Diabetic Retinopathy</strong>,
+          <strong>Glaucoma</strong>, or confirm a <strong>Normal</strong> eye.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          <a href="{{ url_for('detect') }}" class="btn btn-hero-primary">
+            <i class="bi bi-camera-fill me-2"></i>Start Detection
+          </a>
+          <a href="{{ url_for('about') }}" class="btn btn-hero-outline">
+            <i class="bi bi-info-circle me-2"></i>Learn More
+          </a>
+        </div>
+        <div class="hero-badges mt-5">
+          <div class="hero-badge"><i class="bi bi-shield-check"></i><span>CLAHE Enhanced</span></div>
+          <div class="hero-badge"><i class="bi bi-diagram-3"></i><span>Ensemble AI</span></div>
+          <div class="hero-badge"><i class="bi bi-lightning"></i><span>Instant Results</span></div>
+        </div>
+      </div>
+      <div class="col-lg-6 text-center">
+        <div class="hero-visual">
+          <div class="eye-scanner-ring ring-outer"></div>
+          <div class="eye-scanner-ring ring-mid"></div>
+          <div class="eye-scanner-ring ring-inner"></div>
+          <div class="eye-icon-center">
+            <i class="bi bi-eye-fill"></i>
+          </div>
+          <div class="scan-line"></div>
+          <!-- Disease labels floating -->
+          <div class="disease-float float-cataract"><i class="bi bi-circle-half"></i> Cataract</div>
+          <div class="disease-float float-dr"><i class="bi bi-droplet-fill"></i> Diabetic Retinopathy</div>
+          <div class="disease-float float-glaucoma"><i class="bi bi-bullseye"></i> Glaucoma</div>
+          <div class="disease-float float-normal"><i class="bi bi-check-circle-fill"></i> Normal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats bar ─────────────────────────────────────────────────────────────── -->
+<section class="stats-bar">
+  <div class="container">
+    <div class="row g-4 justify-content-center">
+      <div class="col-6 col-md-3 text-center">
+        <div class="stat-item">
+          <div class="stat-number">{{ stats.total or 0 }}</div>
+          <div class="stat-label">Total Scans</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="stat-item">
+          <div class="stat-number">4</div>
+          <div class="stat-label">Disease Classes</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="stat-item">
+          <div class="stat-number">2+</div>
+          <div class="stat-label">AI Models</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="stat-item">
+          <div class="stat-number">224px</div>
+          <div class="stat-label">Image Resolution</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ──────────────────────────────────────────────────────────── -->
+<section class="section-pad bg-white">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <span class="section-badge">Process</span>
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-desc">Three simple steps to get your eye health analysis</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="how-card">
+          <div class="how-step">01</div>
+          <div class="how-icon"><i class="bi bi-upload"></i></div>
+          <h5>Upload or Capture</h5>
+          <p>Upload a fundus photograph from your device, or use your camera for a direct scan.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="how-card">
+          <div class="how-step">02</div>
+          <div class="how-icon"><i class="bi bi-cpu"></i></div>
+          <h5>AI Analysis</h5>
+          <p>Our ensemble of CNN models processes the image through CLAHE enhancement and deep learning inference.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="how-card">
+          <div class="how-step">03</div>
+          <div class="how-icon"><i class="bi bi-graph-up"></i></div>
+          <h5>Instant Results</h5>
+          <p>Receive a detailed diagnosis with confidence scores, disease information, and clinical recommendations.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-5">
+      <a href="{{ url_for('detect') }}" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-play-circle me-2"></i>Try It Now
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Disease cards ─────────────────────────────────────────────────────────── -->
+<section class="section-pad bg-light-custom">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <span class="section-badge">Conditions</span>
+      <h2 class="section-title">Detectable Eye Diseases</h2>
+      <p class="section-desc">Our system screens for four major eye conditions using retinal imaging</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3">
+        <div class="disease-card" style="--dc:var(--warning)">
+          <div class="disease-card-icon" style="background:rgba(243,156,18,.12);color:var(--warning)">
+            <i class="bi bi-circle-half"></i>
+          </div>
+          <h5>Cataract</h5>
+          <p>Clouding of the eye's natural lens. Most common cause of vision loss in people over 40.</p>
+          <div class="disease-urgency urgency-moderate">Moderate Urgency</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="disease-card" style="--dc:var(--danger)">
+          <div class="disease-card-icon" style="background:rgba(231,76,60,.12);color:var(--danger)">
+            <i class="bi bi-droplet-fill"></i>
+          </div>
+          <h5>Diabetic Retinopathy</h5>
+          <p>Damage to blood vessels in the retina caused by diabetes. Leading cause of blindness.</p>
+          <div class="disease-urgency urgency-high">High Urgency</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="disease-card" style="--dc:#9b59b6">
+          <div class="disease-card-icon" style="background:rgba(155,89,182,.12);color:#9b59b6">
+            <i class="bi bi-bullseye"></i>
+          </div>
+          <h5>Glaucoma</h5>
+          <p>Optic nerve damage often caused by elevated intraocular pressure. Can cause blindness.</p>
+          <div class="disease-urgency urgency-high">High Urgency</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="disease-card" style="--dc:var(--success)">
+          <div class="disease-card-icon" style="background:rgba(39,174,96,.12);color:var(--success)">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <h5>Normal</h5>
+          <p>No disease indicators detected. Healthy retinal appearance with no abnormalities.</p>
+          <div class="disease-urgency urgency-low">Routine Check</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Technology ────────────────────────────────────────────────────────────── -->
+<section class="section-pad bg-white">
+  <div class="container">
+    <div class="section-header text-center mb-5">
+      <span class="section-badge">Technology</span>
+      <h2 class="section-title">Powered by Deep Learning</h2>
+    </div>
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <div class="tech-list">
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#e74c3c"></div>
+            <div>
+              <strong>DenseNet121</strong>
+              <span>Dense convolutional network – 121 layers with skip connections</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#3498db"></div>
+            <div>
+              <strong>MobileNetV2</strong>
+              <span>Lightweight mobile-optimised architecture with inverted residuals</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#2ecc71"></div>
+            <div>
+              <strong>CLAHE Preprocessing</strong>
+              <span>Contrast Limited Adaptive Histogram Equalisation for better detail</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#f39c12"></div>
+            <div>
+              <strong>Ensemble Inference</strong>
+              <span>Probability-averaging across models for robust predictions</span>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#9b59b6"></div>
+            <div>
+              <strong>Fallback APIs</strong>
+              <span>Hugging Face &amp; Gemini Vision as secondary validation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="model-arch-diagram">
+          <div class="arch-step">Input Image (224×224 RGB)</div>
+          <div class="arch-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="arch-step">CLAHE Enhancement</div>
+          <div class="arch-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="arch-row">
+            <div class="arch-step arch-step-model">DenseNet121</div>
+            <div class="arch-step arch-step-model">MobileNetV2</div>
+          </div>
+          <div class="arch-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="arch-step arch-step-ensemble">Probability Averaging</div>
+          <div class="arch-arrow"><i class="bi bi-arrow-down"></i></div>
+          <div class="arch-step arch-step-result">Classification Result</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container text-center">
+    <h2 class="text-white fw-bold mb-3">Ready to Analyse Your Eye Health?</h2>
+    <p class="text-white-75 mb-4">Upload a fundus image now for an instant AI-powered diagnosis.</p>
+    <a href="{{ url_for('detect') }}" class="btn btn-light btn-lg px-5 fw-semibold">
+      <i class="bi bi-camera-fill me-2"></i>Begin Detection
+    </a>
+  </div>
+</section>
+
+{% endblock %}

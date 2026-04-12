@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}About – {{ project_title }}{% endblock %}
+
+{% block content %}
+<section class="section-pad">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="page-header text-center mb-5">
+      <span class="section-badge">Academic Project</span>
+      <h2 class="section-title">About Eye Disease Detection</h2>
+      <p class="section-desc">A deep learning-based eye disease classification system developed at East West University</p>
+    </div>
+
+    <!-- University Info card -->
+    <div class="uni-card mb-5">
+      <div class="row align-items-center gy-4">
+        <div class="col-md-2 text-center">
+          <div class="uni-badge"><i class="bi bi-mortarboard-fill"></i></div>
+        </div>
+        <div class="col-md-7">
+          <h4 class="fw-bold mb-1">{{ university }}</h4>
+          <p class="text-muted mb-1">{{ department }}</p>
+          <p class="mb-0 text-muted small">Academic Year: {{ academic_year }}</p>
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="supervisor-card-inner">
+            <div class="supervisor-avatar"><i class="bi bi-person-badge-fill"></i></div>
+            <div class="mt-2">
+              <div class="fw-bold">{{ supervisor }}</div>
+              <div class="text-muted small">{{ supervisor_title }}</div>
+              <div class="badge bg-primary-subtle text-primary mt-1">Project Supervisor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Team members -->
+      <div class="col-lg-4">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-people-fill me-2"></i>Team Members</h5>
+          {% for m in team_members %}
+          <div class="team-member-item">
+            <div class="team-avatar">{{ m.name[0] }}</div>
+            <div>
+              <div class="fw-semibold">{{ m.name }}</div>
+              <div class="text-muted small">Student ID: {{ m.id }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Project overview -->
+      <div class="col-lg-8">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-file-text me-2"></i>Project Overview</h5>
+          <p>
+            <strong>Eye Disease Detection</strong> is an academic capstone project that applies transfer learning and
+            ensemble deep learning to automate the classification of eye diseases from fundus (retinal)
+            photographs. The system was trained on the
+            <em>Eye Diseases Classification</em> dataset sourced from Kaggle, comprising approximately
+            <strong>4,217 labeled retinal images</strong> across four categories.
+          </p>
+          <p>
+            The core methodology follows a multi-model ensemble approach: eight pre-trained convolutional
+            neural network (CNN) architectures are fine-tuned independently using transfer learning from
+            ImageNet weights. Predictions from individual models are aggregated via probability averaging
+            to produce a final, robust classification.
+          </p>
+          <p class="mb-0">
+            A CLAHE (Contrast Limited Adaptive Histogram Equalisation) preprocessing step is applied
+            on the L-channel of the LAB colour space to enhance retinal image contrast before inference,
+            mirroring the training pipeline exactly.
+          </p>
+        </div>
+      </div>
+
+      <!-- Dataset -->
+      <div class="col-lg-6">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-database me-2"></i>Dataset Details</h5>
+          <table class="table table-sm about-table mb-0">
+            <tbody>
+              <tr><th>Source</th><td>Kaggle – Eye Diseases Classification</td></tr>
+              <tr><th>Training Images</th><td>3,376</td></tr>
+              <tr><th>Validation Images</th><td>841</td></tr>
+              <tr><th>Classes</th><td>4 (Cataract, DR, Glaucoma, Normal)</td></tr>
+              <tr><th>Image Size</th><td>224 × 224 px (RGB)</td></tr>
+              <tr><th>Data Split</th><td>80% train / 20% validation</td></tr>
+              <tr><th>Augmentation</th><td>Rotation, shifts, horizontal flip</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Models -->
+      <div class="col-lg-6">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-cpu me-2"></i>Model Architecture</h5>
+          <p class="text-muted small">Eight CNN backbones trained with custom classification heads:</p>
+          <div class="model-grid">
+            {% for m in ['EfficientNetB3','ResNet50V2','DenseNet121','InceptionV3',
+                         'MobileNetV2','Xception','NASNetMobile','VGG16'] %}
+            <span class="model-chip-about">{{ m }}</span>
+            {% endfor %}
+          </div>
+          <hr>
+          <p class="text-muted small mb-1"><strong>Custom head (all models):</strong></p>
+          <code class="d-block p-2 bg-light rounded small">
+            GlobalAveragePooling2D → BatchNorm → Dense(256, relu) → Dropout(0.3) → Dense(4, softmax)
+          </code>
+          <p class="text-muted small mt-2 mb-0">Optimizer: Adam (lr=0.0001) · Loss: Categorical Cross-Entropy</p>
+        </div>
+      </div>
+
+      <!-- Training config -->
+      <div class="col-lg-6">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-gear me-2"></i>Training Configuration</h5>
+          <table class="table table-sm about-table mb-0">
+            <tbody>
+              <tr><th>Optimiser</th><td>Adam (lr = 0.0001)</td></tr>
+              <tr><th>Loss Function</th><td>Categorical Cross-Entropy</td></tr>
+              <tr><th>Epochs</th><td>10 per model (with early stopping)</td></tr>
+              <tr><th>Batch Size</th><td>32</td></tr>
+              <tr><th>Early Stopping</th><td>Patience = 3 (val_accuracy)</td></tr>
+              <tr><th>LR Reduction</th><td>ReduceLROnPlateau (factor 0.5, patience 2)</td></tr>
+              <tr><th>Weights Init</th><td>ImageNet (frozen backbone)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ensemble -->
+      <div class="col-lg-6">
+        <div class="about-card h-100">
+          <h5 class="about-card-title"><i class="bi bi-diagram-3 me-2"></i>Ensemble Strategy</h5>
+          <p>
+            Each model produces a 4-dimensional probability vector via softmax.
+            Predictions from all enabled models are averaged element-wise:
+          </p>
+          <div class="formula-box">
+            P<sub>final</sub>(c) = (1/N) × Σ P<sub>i</sub>(c)
+          </div>
+          <p class="mt-3">
+            The class with the highest averaged probability is selected as the final prediction.
+            If ensemble confidence falls below a configurable threshold (default 65%), the system
+            automatically consults external API fallbacks for re-validation:
+          </p>
+          <ol class="text-muted small">
+            <li>Hugging Face Inference API (free tier)</li>
+            <li>Google Gemini Vision API (free tier)</li>
+          </ol>
+          <p class="mb-0 text-muted small">Final result is a 60/40 weighted blend of ensemble and API outputs.</p>
+        </div>
+      </div>
+
+      <!-- Web App tech -->
+      <div class="col-12">
+        <div class="about-card">
+          <h5 class="about-card-title"><i class="bi bi-code-slash me-2"></i>Technology Stack</h5>
+          <div class="row g-3 mt-1">
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-filetype-py"></i><span>Python / Flask</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-cpu"></i><span>TensorFlow / Keras</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-image"></i><span>OpenCV (CLAHE)</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-database"></i><span>SQLite</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-bootstrap"></i><span>Bootstrap 5</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-bar-chart"></i><span>Chart.js</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-camera-video"></i><span>WebRTC Camera</span></div></div>
+            <div class="col-6 col-md-3"><div class="stack-item"><i class="bi bi-cloud"></i><span>HF + Gemini APIs</span></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

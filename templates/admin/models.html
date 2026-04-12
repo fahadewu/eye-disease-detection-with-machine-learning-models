@@ -1,0 +1,100 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Model Manager – Admin{% endblock %}
+{% block page_title %}Model Manager{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  {% for key, m in models.items() %}
+  <div class="col-lg-6">
+    <div class="admin-card model-mgr-card {% if not m.enabled %}model-disabled{% endif %}">
+      <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <div class="model-icon-sm"><i class="bi bi-cpu"></i></div>
+          <h6 class="mb-0">{{ m.display_name }}</h6>
+        </div>
+        <div>
+          {% if m.loaded %}
+            <span class="badge bg-success-soft text-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Loaded</span>
+          {% elif m.exists %}
+            <span class="badge bg-warning-soft text-warning"><i class="bi bi-circle me-1" style="font-size:.5rem"></i>Not loaded</span>
+          {% else %}
+            <span class="badge bg-danger-soft text-danger"><i class="bi bi-x me-1"></i>File missing</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <p class="text-muted small mb-3">{{ m.description }}</p>
+        <div class="model-meta-grid mb-4">
+          <div><span class="meta-key">Filename</span><span class="meta-val">{{ m.filename }}</span></div>
+          <div><span class="meta-key">Size</span><span class="meta-val">{{ m.size_mb }} MB</span></div>
+          <div><span class="meta-key">Enabled</span>
+            <span class="meta-val">
+              {% if m.enabled %}<span class="text-success fw-bold">Yes</span>
+              {% else %}<span class="text-danger fw-bold">No</span>{% endif %}
+            </span>
+          </div>
+          <div><span class="meta-key">In Memory</span><span class="meta-val">{{ 'Yes' if m.loaded else 'No' }}</span></div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <!-- Toggle enable/disable -->
+          <form method="POST" action="{{ url_for('admin_model_toggle') }}" class="d-inline">
+            <input type="hidden" name="model_key" value="{{ key }}">
+            {% if m.enabled %}
+            <input type="hidden" name="enabled" value="0">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-pause-circle me-1"></i>Disable
+            </button>
+            {% else %}
+            <input type="hidden" name="enabled" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-play-circle me-1"></i>Enable
+            </button>
+            {% endif %}
+          </form>
+
+          <!-- Unload from memory -->
+          {% if m.loaded %}
+          <form method="POST" action="{{ url_for('admin_model_unload') }}" class="d-inline">
+            <input type="hidden" name="model_key" value="{{ key }}">
+            <button type="submit" class="btn btn-sm btn-outline-warning">
+              <i class="bi bi-memory me-1"></i>Unload from RAM
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Info box -->
+  <div class="col-12">
+    <div class="admin-card">
+      <div class="admin-card-header"><h6 class="mb-0">How Models Work</h6></div>
+      <div class="admin-card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="info-tip">
+              <i class="bi bi-info-circle text-primary me-2"></i>
+              <strong>Enabling/Disabling:</strong> Disabled models are excluded from the ensemble. At least one model must remain enabled.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="info-tip">
+              <i class="bi bi-memory text-warning me-2"></i>
+              <strong>Unload from RAM:</strong> Frees GPU/RAM without disabling the model. It will auto-reload on next prediction request.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="info-tip">
+              <i class="bi bi-arrow-repeat text-success me-2"></i>
+              <strong>Retraining:</strong> Use the Retrain section to train a new model with custom configuration and add it to the ensemble.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

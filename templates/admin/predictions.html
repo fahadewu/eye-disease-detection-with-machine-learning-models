@@ -1,0 +1,90 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Predictions – Admin{% endblock %}
+{% block page_title %}Prediction History{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+  <div class="admin-card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0">All Predictions <span class="badge bg-primary ms-2">Page {{ page }}</span></h6>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin_predictions', page=page-1) }}" class="btn btn-sm btn-outline-secondary {% if page <= 1 %}disabled{% endif %}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+      <a href="{{ url_for('admin_predictions', page=page+1) }}" class="btn btn-sm btn-outline-secondary {% if predictions|length < limit %}disabled{% endif %}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+  </div>
+  <div class="admin-card-body p-0">
+    {% if predictions %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Image</th>
+            <th>Prediction</th>
+            <th>Confidence</th>
+            <th>Method</th>
+            <th>Fallback</th>
+            <th>IP</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in predictions %}
+          {% set clr_map = {'Cataract':'#f39c12','Diabetic Retinopathy':'#e74c3c','Glaucoma':'#9b59b6','Normal':'#27ae60'} %}
+          {% set clr = clr_map.get(p.prediction, '#6c757d') %}
+          <tr>
+            <td class="text-muted small">{{ p.id }}</td>
+            <td>
+              {% if p.filename %}
+              <img src="{{ url_for('static', filename='uploads/' + p.filename) }}"
+                   class="prediction-thumb"
+                   onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23eee%22/><text x=%2212%22 y=%2226%22 font-size=%2214%22>👁</text></svg>'"
+                   alt="{{ p.filename }}">
+              {% else %}
+              <span class="text-muted small">–</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="fw-semibold" style="color:{{ clr }}">
+                {{ p.prediction }}
+              </span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-fill" style="height:6px;min-width:60px">
+                  <div class="progress-bar" style="width:{{ (p.confidence*100)|round|int }}%;background:{{ clr }}"></div>
+                </div>
+                <span class="small fw-medium">{{ (p.confidence*100)|round(1) }}%</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border">{{ p.method }}</span>
+            </td>
+            <td>
+              {% if p.fallback_used %}
+                <span class="badge bg-warning-soft text-warning" title="{{ p.fallback_note }}">
+                  <i class="bi bi-cloud-check"></i> Yes
+                </span>
+              {% else %}
+                <span class="text-muted small">–</span>
+              {% endif %}
+            </td>
+            <td class="text-muted small">{{ p.ip_address or '–' }}</td>
+            <td class="text-muted small" style="white-space:nowrap">{{ p.created_at[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+      No predictions recorded yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

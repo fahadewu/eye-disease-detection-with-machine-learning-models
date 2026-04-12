@@ -1,0 +1,50 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.cache/
+
+# ── Virtual environment ────────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+ENV/
+
+# ── Flask / app runtime ────────────────────────────────────────────────────────
+app.db
+static/uploads/*
+!static/uploads/.gitkeep
+
+# ── Model weights (too large for GitHub – store separately) ───────────────────
+*.h5
+*.keras
+*.pb
+*.ckpt
+*.index
+*.data-*
+
+# ── Environment secrets ────────────────────────────────────────────────────────
+.env
+*.env
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
