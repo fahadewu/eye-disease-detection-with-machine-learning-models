@@ -1,6 +1,7 @@
 # ── Core web framework ─────────────────────────────────────────────────────────
 flask>=2.3.0
 Werkzeug>=2.3.0
+gunicorn>=21.2.0
 
 # ── Image processing ───────────────────────────────────────────────────────────
 opencv-python-headless>=4.8.0

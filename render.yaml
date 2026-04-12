@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: eye-disease-detection
+    runtime: python
+    region: oregon
+    plan: starter                      # upgrade to standard (2 GB RAM) for TF inference
+    rootDir: .                         # repo root IS the webapp — NOT ./build
+    buildCommand: bash build.sh
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 300 --preload
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true            # Render auto-generates a secure random value
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GIT_LFS_SKIP_SMUDGE       # set to 0 so Render pulls LFS model files
+        value: 0
+
+      # ── Optional: add your own API keys as Render secrets ─────────────────
+      # - key: HUGGINGFACE_API_KEY
+      #   sync: false                  # enter value in Render dashboard
+      # - key: GEMINI_API_KEY
+      #   sync: false
