@@ -26,14 +26,45 @@ from PIL import Image
 
 log = logging.getLogger(__name__)
 
-# ── lazy imports so TF error surfaces clearly ──────────────────────────────────
+# ── TensorFlow — lazy, optional import ────────────────────────────────────────
+# TF is NOT required at startup. It is loaded on the first prediction request.
+# If TF is unavailable (wrong Python version, unsupported platform, etc.)
+# the app falls back to Hugging Face / Gemini Vision APIs automatically.
+
 _tf = None
+_tf_unavailable = False          # set True once we know TF can't load
+_tf_unavailable_reason = ""
+
 def _get_tf():
-    global _tf
+    global _tf, _tf_unavailable, _tf_unavailable_reason
+    if _tf_unavailable:
+        return None
     if _tf is None:
-        import tensorflow as tf
-        _tf = tf
+        try:
+            import tensorflow as tf
+            _tf = tf
+        except ImportError as exc:
+            _tf_unavailable = True
+            _tf_unavailable_reason = (
+                f"TensorFlow not installed ({exc}). "
+                "Run  python install.py  to install it, or configure a "
+                "Hugging Face / Gemini API key in Admin → Settings for fallback mode."
+            )
+            log.warning("TensorFlow unavailable: %s", _tf_unavailable_reason)
+        except Exception as exc:
+            _tf_unavailable = True
+            _tf_unavailable_reason = f"TensorFlow failed to load: {exc}"
+            log.error("TensorFlow load error: %s", exc)
     return _tf
+
+
+def tf_status() -> dict:
+    """Return TF availability info for health checks and admin display."""
+    if _tf_unavailable:
+        return {"available": False, "reason": _tf_unavailable_reason, "version": None}
+    if _tf is not None:
+        return {"available": True, "reason": None, "version": _tf.__version__}
+    return {"available": None, "reason": "Not yet loaded", "version": None}
 
 # ── model cache ────────────────────────────────────────────────────────────────
 _loaded_models: dict = {}          # key → keras model
@@ -47,6 +78,8 @@ def _make_compat_objects():
     but current TF/Keras build doesn't accept.
     """
     tf = _get_tf()
+    if tf is None:
+        return {}
 
     _STRIP_KEYS = ('quantization_config', 'lora_rank', 'lora_alpha',
                    'dtype_policy', 'use_legacy_activation')

@@ -420,10 +420,12 @@ def admin_settings():
 def health():
     models = _build_models_config()
     loaded = list(mu._loaded_models.keys())
+    tf_info = mu.tf_status()
     return jsonify({
-        'status':      'ok',
+        'status':        'ok',
         'models_loaded': loaded,
-        'db':          os.path.exists(Config.DATABASE_PATH),
+        'db':            os.path.exists(Config.DATABASE_PATH),
+        'tensorflow':    tf_info,
     })
 
 

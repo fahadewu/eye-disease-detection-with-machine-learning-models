@@ -101,8 +101,19 @@ source venv/bin/activate       # macOS/Linux
 
 ### 3. Install dependencies
 ```bash
-pip install -r requirements.txt
+python install.py
 ```
+
+`install.py` auto-detects your Python version and platform and installs the right TensorFlow build:
+
+| Environment | Installed automatically |
+|---|---|
+| macOS Apple Silicon (M1/M2/M3/M4) | `tensorflow-macos` + `tensorflow-metal` |
+| macOS Intel | `tensorflow` |
+| Linux / Windows x86-64 | `tensorflow-cpu` |
+| Python 3.13+ or unsupported platform | Core deps only — app uses API fallback |
+
+> **No TF? No problem.** The app runs in fallback mode using free Hugging Face / Gemini Vision APIs. Set your keys in Admin → Settings.
 
 ### 4. Add model weights
 Place the `.h5` model files in the **parent directory** (one level above this folder):

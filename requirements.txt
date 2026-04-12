@@ -1,8 +1,21 @@
-flask==2.3.3
-Werkzeug==2.3.7
-tensorflow==2.20.0
-opencv-python-headless==4.8.1.78
-Pillow==10.0.1
-numpy==1.24.3
-requests==2.31.0
-python-dotenv==1.0.0
+# ── Core web framework ─────────────────────────────────────────────────────────
+flask>=2.3.0
+Werkzeug>=2.3.0
+
+# ── Image processing ───────────────────────────────────────────────────────────
+opencv-python-headless>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# ── HTTP & utilities ───────────────────────────────────────────────────────────
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# ── TensorFlow (installed separately by install.py / run.sh) ──────────────────
+# Do NOT pin TensorFlow here — platform/Python version varies widely.
+# Run:  python install.py     to auto-detect and install the right TF build.
+# Or manually:
+#   Standard (CPython 3.9–3.12, x86-64):  pip install "tensorflow>=2.13"
+#   Apple Silicon (M1/M2/M3):             pip install tensorflow-macos tensorflow-metal
+#   CPU-only fallback:                     pip install "tensorflow-cpu>=2.13"
+#   No TF at all: app still works via Hugging Face / Gemini fallback APIs.

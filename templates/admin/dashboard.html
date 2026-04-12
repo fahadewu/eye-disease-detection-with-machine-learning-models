@@ -5,6 +5,25 @@
 {% block extra_head %}{% endblock %}
 
 {% block content %}
+
+{# ── TF availability banner ──────────────────────────────────────────────── #}
+{% set tf = namespace(ok=false) %}
+{% for key, m in models.items() %}{% if m.loaded %}{% set tf.ok = true %}{% endif %}{% endfor %}
+{% if not tf.ok %}
+<div class="alert alert-warning d-flex gap-3 align-items-start mb-4 py-3" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 mt-1"></i>
+  <div>
+    <strong>TensorFlow not detected</strong> — local model inference is unavailable on this machine.<br>
+    <span class="small">
+      Run <code>python install.py</code> inside the <code>webapp/</code> folder to auto-install the correct
+      TensorFlow build for your Python version and platform.
+      Until then, predictions use the Hugging Face / Gemini fallback APIs
+      (configure keys in <a href="{{ url_for('admin_settings') }}">Settings</a>).
+    </span>
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-4">
 
   <!-- ── Stat cards ───────────────────────────────────────────────────────── -->
