@@ -21,8 +21,9 @@ app.db
 static/uploads/*
 !static/uploads/.gitkeep
 
-# ── Model weights (too large for GitHub – store separately) ───────────────────
-*.h5
+# ── Model weights ─────────────────────────────────────────────────────────────
+# models/*.h5 are tracked via Git LFS (see .gitattributes)
+# Any .h5 files outside models/ are ignored
 *.keras
 *.pb
 *.ckpt

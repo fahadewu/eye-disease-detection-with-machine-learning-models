@@ -2,8 +2,26 @@ import os
 import hashlib
 import secrets
 
-BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.dirname(BASE_DIR)   # parent folder with the .h5 files
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(BASE_DIR)   # parent folder (legacy location)
+
+def _resolve_models_dir():
+    """
+    Look for model files in:
+      1. webapp/models/   ← canonical location (git-tracked via LFS)
+      2. parent directory ← legacy / dev convenience
+    Returns the first directory that actually contains a .h5 file.
+    """
+    candidates = [
+        os.path.join(BASE_DIR, 'models'),
+        PROJECT_DIR,
+    ]
+    for path in candidates:
+        if os.path.isdir(path):
+            if any(f.endswith('.h5') for f in os.listdir(path)):
+                return path
+    # Default to webapp/models/ even if empty (avoids crash on fresh clone)
+    return os.path.join(BASE_DIR, 'models')
 
 
 class Config:
@@ -17,19 +35,38 @@ class Config:
     DATABASE_PATH = os.path.join(BASE_DIR, 'app.db')
 
     # ── Models ─────────────────────────────────────────────────────────────────
-    MODELS_DIR = PROJECT_DIR
+    # Resolved at startup: prefers webapp/models/, falls back to parent dir
+    MODELS_DIR = _resolve_models_dir()
 
     AVAILABLE_MODELS = {
         'densenet': {
             'filename':     'densenet.h5',
             'display_name': 'DenseNet121',
-            'description':  'Dense Convolutional Network – 121 layers, high accuracy',
+            'description':  'Dense Convolutional Network – 121 layers, skip connections',
             'enabled':      True,
         },
         'mobilenet': {
             'filename':     'mobilenet.h5',
             'display_name': 'MobileNetV2',
             'description':  'Lightweight mobile-optimised network, fast inference',
+            'enabled':      True,
+        },
+        'effnet': {
+            'filename':     'effnet.h5',
+            'display_name': 'EfficientNetB3',
+            'description':  'Compound-scaled EfficientNet, state-of-the-art accuracy',
+            'enabled':      True,
+        },
+        'inceptionv3': {
+            'filename':     'inceptionv3.h5',
+            'display_name': 'InceptionV3',
+            'description':  'Google Inception architecture with factorised convolutions',
+            'enabled':      True,
+        },
+        'vgg16': {
+            'filename':     'vgg16.h5',
+            'display_name': 'VGG16',
+            'description':  'Oxford VGG deep network – 16 weight layers',
             'enabled':      True,
         },
     }
