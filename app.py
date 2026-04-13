@@ -299,7 +299,9 @@ def admin_models():
             'size_mb': size_mb,
             'loaded':  loaded,
         }
-    return render_template('admin/models.html', models=model_statuses)
+    return render_template('admin/models.html',
+                           models=model_statuses,
+                           tf_status=mu.tf_status())
 
 
 @app.route('/admin/models/toggle', methods=['POST'])
@@ -322,6 +324,71 @@ def admin_model_unload():
     key = request.form.get('model_key')
     mu.unload_model(key)
     flash(f"Model unloaded from memory.", 'info')
+    return redirect(url_for('admin_models'))
+
+
+@app.route('/admin/models/load', methods=['POST'])
+@admin_required
+def admin_model_load():
+    """Manually load a single model into memory from the admin panel."""
+    key = request.form.get('model_key')
+    if key not in Config.AVAILABLE_MODELS:
+        flash('Unknown model key.', 'danger')
+        return redirect(url_for('admin_models'))
+
+    tf_info = mu.tf_status()
+    if not tf_info.get('available'):
+        reason = tf_info.get('reason', 'TensorFlow is not installed.')
+        flash(f'Cannot load model — {reason}', 'danger')
+        return redirect(url_for('admin_models'))
+
+    info = Config.AVAILABLE_MODELS[key]
+    model_path = os.path.join(Config.MODELS_DIR, info['filename'])
+
+    if not os.path.exists(model_path):
+        flash(f"Model file not found: {info['filename']}. "
+              "Place the .h5 file in the models/ directory.", 'danger')
+        return redirect(url_for('admin_models'))
+
+    model = mu.load_model(key, model_path)
+    if model is not None:
+        flash(f"Model '{info['display_name']}' loaded into memory successfully.", 'success')
+    else:
+        flash(f"Failed to load '{info['display_name']}'. "
+              "Check the server logs for details (possibly corrupted file or OOM).", 'danger')
+    return redirect(url_for('admin_models'))
+
+
+@app.route('/admin/models/load-all', methods=['POST'])
+@admin_required
+def admin_model_load_all():
+    """Load all enabled models into memory."""
+    tf_info = mu.tf_status()
+    if not tf_info.get('available'):
+        reason = tf_info.get('reason', 'TensorFlow is not installed.')
+        flash(f'Cannot load models — {reason}', 'danger')
+        return redirect(url_for('admin_models'))
+
+    loaded, failed, missing = [], [], []
+    for key, info in Config.AVAILABLE_MODELS.items():
+        model_path = os.path.join(Config.MODELS_DIR, info['filename'])
+        if not os.path.exists(model_path):
+            missing.append(info['display_name'])
+            continue
+        model = mu.load_model(key, model_path)
+        if model is not None:
+            loaded.append(info['display_name'])
+        else:
+            failed.append(info['display_name'])
+
+    if loaded:
+        flash(f"Loaded: {', '.join(loaded)}.", 'success')
+    if failed:
+        flash(f"Failed to load: {', '.join(failed)}. Check server logs.", 'danger')
+    if missing:
+        flash(f"File missing (place .h5 in models/ folder): {', '.join(missing)}.", 'warning')
+    if not loaded and not failed and not missing:
+        flash('No models found.', 'info')
     return redirect(url_for('admin_models'))
 
 

@@ -3,6 +3,45 @@
 {% block page_title %}Model Manager{% endblock %}
 
 {% block content %}
+
+{# ── TensorFlow status banner ─────────────────────────────────────────────── #}
+{% set tf = tf_status %}
+{% if tf.available == true %}
+<div class="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+  <i class="bi bi-check-circle-fill"></i>
+  <div>TensorFlow <strong>{{ tf.version }}</strong> is installed and ready.
+    <form method="POST" action="{{ url_for('admin_model_load_all') }}" class="d-inline ms-3">
+      <button type="submit" class="btn btn-sm btn-success">
+        <i class="bi bi-cloud-download me-1"></i>Load All Models Now
+      </button>
+    </form>
+  </div>
+</div>
+{% elif tf.available == false %}
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <div>
+    <strong>TensorFlow not available.</strong> {{ tf.reason }}<br>
+    <small class="text-muted">
+      On Windows: open a terminal in the <code>webapp/</code> folder and run
+      <code>python install.py</code> — or run
+      <code>pip install tensorflow</code> then restart the server.
+    </small>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
+  <i class="bi bi-hourglass-split"></i>
+  <div>TensorFlow has not been imported yet (loads on first prediction request).
+    <form method="POST" action="{{ url_for('admin_model_load_all') }}" class="d-inline ms-3">
+      <button type="submit" class="btn btn-sm btn-warning text-dark">
+        <i class="bi bi-cloud-download me-1"></i>Load All Models Now
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-4">
   {% for key, m in models.items() %}
   <div class="col-lg-6">
@@ -52,6 +91,16 @@
             </button>
             {% endif %}
           </form>
+
+          <!-- Load into memory -->
+          {% if not m.loaded and m.exists %}
+          <form method="POST" action="{{ url_for('admin_model_load') }}" class="d-inline">
+            <input type="hidden" name="model_key" value="{{ key }}">
+            <button type="submit" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-cloud-download me-1"></i>Load Now
+            </button>
+          </form>
+          {% endif %}
 
           <!-- Unload from memory -->
           {% if m.loaded %}
