@@ -141,6 +141,13 @@ def load_model(model_key: str, model_path: str):
                     custom_objects=custom_objects,
                 )
                 log.info("Model %s loaded successfully.", model_key)
+            except MemoryError:
+                log.error(
+                    "Out of memory loading model %s — server RAM too low. "
+                    "Disable some models in Admin → Models to reduce memory use.",
+                    model_key,
+                )
+                return None
             except Exception as exc:
                 log.error("Failed to load %s: %s", model_key, exc)
                 return None

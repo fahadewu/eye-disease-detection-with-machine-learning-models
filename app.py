@@ -33,6 +33,18 @@ logging.basicConfig(level=logging.INFO)
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 db.init_db()
 
+# ── TF pre-warm ────────────────────────────────────────────────────────────────
+# Import TF now (during gunicorn --preload) so workers inherit the already-loaded
+# module via copy-on-write fork. Without this the first prediction request pays
+# the full 20-30 s cold-start cost and Render's proxy times out → 502.
+def _prewarm():
+    tf = mu._get_tf()
+    if tf:
+        logging.getLogger(__name__).info(
+            "TensorFlow %s pre-warmed at startup.", tf.__version__)
+
+threading.Thread(target=_prewarm, daemon=True).start()
+
 
 # ── Context helpers ────────────────────────────────────────────────────────────
 
@@ -127,6 +139,25 @@ def api_predict():
       • file    – uploaded image file
       • image   – base64 data URL (from webcam capture)
     """
+    try:
+        return _api_predict_inner()
+    except MemoryError:
+        logging.getLogger(__name__).error(
+            "OOM during prediction — server is low on memory.")
+        return jsonify({
+            'error': (
+                'Server ran out of memory loading AI models. '
+                'The analysis will use API fallback on the next request. '
+                'Please try again.'
+            )
+        }), 503
+    except Exception as exc:
+        logging.getLogger(__name__).error(
+            "Unhandled error in /api/predict: %s", exc, exc_info=True)
+        return jsonify({'error': 'Internal server error. Please try again.'}), 500
+
+
+def _api_predict_inner():
     file_bytes = None  # type: Optional[bytes]
     filename = 'capture.jpg'
 
