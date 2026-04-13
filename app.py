@@ -184,6 +184,11 @@ def _api_predict_inner():
     with open(save_path, 'wb') as fp:
         fp.write(file_bytes)
 
+    # Validate image to reject non-eye images
+    is_valid, reason = mu.is_valid_eye_image(file_bytes)
+    if not is_valid:
+        return jsonify({'error': f'{reason}'}), 400
+
     # Load live settings
     s      = _get_settings()
     models = _build_models_config()
@@ -528,6 +533,6 @@ def health():
 
 
 if __name__ == '__main__':
-    port  = int(os.environ.get('PORT', 8080))
+    port  = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV', 'production') != 'production'
     app.run(debug=debug, host='0.0.0.0', port=port)

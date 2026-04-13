@@ -1,19 +1,15 @@
-# ── Core web framework ─────────────────────────────────────────────────────────
-flask>=2.3.0
-Werkzeug>=2.3.0
-gunicorn>=21.2.0
+# ── Core web framework ────────────────
+flask
+gunicorn
 
-# ── Image processing ───────────────────────────────────────────────────────────
-opencv-python-headless>=4.8.0
-Pillow>=10.0.0
-numpy>=1.24.0
+# ── Image processing ──────────────────
+opencv-python-headless
+Pillow
+numpy
 
-# ── HTTP & utilities ───────────────────────────────────────────────────────────
-requests>=2.31.0
-python-dotenv>=1.0.0
+# ── HTTP & utilities ──────────────────
+requests
+python-dotenv
 
-# ── TensorFlow ────────────────────────────────────────────────────────────────
-# Works on Linux x86-64 (Render) and Windows x86-64 with Python 3.9–3.12.
-# Python version is pinned to 3.11 on Render via .python-version.
-# On Apple Silicon run:  pip install tensorflow-macos tensorflow-metal  instead.
-tensorflow-cpu>=2.13.0,<2.19.0; sys_platform != "darwin"
+# ── AI/ML (Targeting stable 3.12) ─────
+tensorflow-cpu; sys_platform != "darwin"

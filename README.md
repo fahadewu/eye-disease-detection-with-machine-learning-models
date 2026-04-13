@@ -139,13 +139,13 @@ python app.py
 bash run.sh
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:5000** in your browser.
 
 ---
 
 ## Admin Panel
 
-URL: `http://localhost:8080/admin`  
+URL: `http://localhost:5000/admin`  
 Default credentials: `admin` / `admin123`  
 *(Change immediately in Settings after first login)*
 

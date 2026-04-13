@@ -174,6 +174,87 @@ def clahe_preprocess(img_rgb: np.ndarray) -> np.ndarray:
     return rgb.astype(np.float32) / 255.0
 
 
+def is_valid_eye_image(file_bytes: bytes) -> tuple[bool, str]:
+    """
+    Strict heuristic to check if the uploaded image is likely a human eye or a fundus scan.
+    Returns (is_valid, reason_if_invalid).
+    """
+    nparr = np.frombuffer(file_bytes, np.uint8)
+    img_arr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img_arr is None:
+        return False, 'Invalid image data format.'
+
+    h, w = img_arr.shape[:2]
+    if h < 50 or w < 50:
+        return False, 'Image resolution is too low. Please provide a clearer image or clear eye image.'
+
+    gray = cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
+    
+    # 0. Check for image clarity (blur detection)
+    # The variance of the Laplacian gives a measure of the sharpness of edges.
+    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if laplacian_var < 10.0:
+        return False, 'Image is too blurry or unclear. Please provide a clearer image or clear eye image.'
+    
+    # 1. Check for external eye using Haar Cascades (STRICT parameters)
+    try:
+        cascade_dir = os.path.join(os.path.dirname(cv2.__file__), 'data')
+        eye_cascade_path = os.path.join(cascade_dir, 'haarcascade_eye.xml')
+        
+        if os.path.exists(eye_cascade_path):
+            eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
+            # Use high minNeighbors to reduce false positives on random non-eye images
+            eyes = eye_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(w//10, h//10))
+            if len(eyes) > 0:
+                return True, ''
+    except Exception as e:
+        log.warning("Haar cascade check failed: %s", e)
+
+    # 2. Fundus image check (macula / retina)
+    # A real fundus image is highly distinctive: strong red/orange, low blue.
+    # It either has black corner masks or is heavily zoomed into a vascular reddish structure.
+    
+    corner_size = max(10, min(h, w) // 10)
+    corners = [
+        gray[0:corner_size, 0:corner_size],
+        gray[0:corner_size, w-corner_size:w],
+        gray[h-corner_size:h, 0:corner_size],
+        gray[h-corner_size:h, w-corner_size:w]
+    ]
+    # Count how many corners are essentially black
+    dark_corners = sum(1 for c in corners if np.mean(c) < 30)
+
+    # Analyze the central 50% region of the image
+    center_roi = img_arr[int(h*0.25):int(h*0.75), int(w*0.25):int(w*0.75)]
+    if center_roi.size == 0:
+        return False, 'Invalid image dimensions.'
+
+    cb = center_roi[:, :, 0].astype(np.float32)
+    cg = center_roi[:, :, 1].astype(np.float32)
+    cr = center_roi[:, :, 2].astype(np.float32)
+    
+    mean_cr, mean_cg, mean_cb = np.mean(cr), np.mean(cg), np.mean(cb)
+    std_cg = np.std(cg)
+
+    # Check color profile: must have strong red response and lower blue response.
+    is_reddish_center = (mean_cr > mean_cb * 1.3) and (mean_cr > mean_cg * 1.05) and (mean_cr > 40)
+    
+    # Needs texture (blood vessels/optic disc) - cannot be a flat red wall
+    has_texture = 5.0 < std_cg < 80.0
+
+    if is_reddish_center and has_texture:
+        # Scenario A: Full fundus scan with FOV edges
+        if dark_corners >= 3:
+            return True, ''
+            
+        # Scenario B: Tightly cropped fundus (no dark corners). 
+        # Must be strictly reddish with distinct vascular contrast.
+        if (mean_cr > mean_cb * 1.5) and (mean_cr > mean_cg * 1.1) and (std_cg > 10.0):
+            return True, ''
+
+    return False, 'Image does not appear to be a valid eye or fundus photo. Please provide a clearer image or clear eye image.'
+
+
 def prepare_image(file_bytes: bytes, image_size=(224, 224)) -> np.ndarray:
     """
     Decode image bytes → CLAHE-preprocessed numpy array ready for model input.

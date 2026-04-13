@@ -35,8 +35,8 @@ python install.py
 
 # ── Start server ───────────────────────────────────────────────────────────────
 echo ""
-echo "→ Starting Flask server on http://0.0.0.0:8080"
-echo "→ App URL   : http://localhost:8080"
-echo "→ Admin URL : http://localhost:8080/admin  (admin / admin123)"
+echo "→ Starting Flask server on http://0.0.0.0:5000"
+echo "→ App URL   : http://localhost:5000"
+echo "→ Admin URL : http://localhost:5000/admin  (admin / admin123)"
 echo ""
 python app.py
