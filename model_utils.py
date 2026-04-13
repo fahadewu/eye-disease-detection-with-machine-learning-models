@@ -125,6 +125,14 @@ def load_model(model_key: str, model_path: str):
                 return None
             try:
                 tf = _get_tf()
+                if tf is None:
+                    log.warning(
+                        "TensorFlow not available — cannot load model %s. "
+                        "Configure a Hugging Face or Gemini API key in Admin → Settings "
+                        "for fallback inference.",
+                        model_key,
+                    )
+                    return None
                 log.info("Loading model %s from %s …", model_key, model_path)
                 custom_objects = _make_compat_objects()
                 _loaded_models[model_key] = tf.keras.models.load_model(

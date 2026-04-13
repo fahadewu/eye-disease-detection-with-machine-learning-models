@@ -63,6 +63,13 @@ def init_db():
     }
     for k, v in defaults.items():
         c.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (k, v))
+        # If the row already exists but has an empty value (e.g. from a blank
+        # env var on a previous deploy), overwrite it with the real default.
+        if v:
+            c.execute(
+                "UPDATE settings SET value=? WHERE key=? AND (value IS NULL OR value='')",
+                (v, k),
+            )
     conn.commit()
     conn.close()
 

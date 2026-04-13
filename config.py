@@ -118,9 +118,10 @@ class Config:
                           'models/gemini-1.5-flash:generateContent')
 
     # ── Admin ──────────────────────────────────────────────────────────────────
-    ADMIN_USERNAME     = os.environ.get('ADMIN_USERNAME', 'admin')
+    ADMIN_USERNAME     = os.environ.get('ADMIN_USERNAME') or 'admin'
     _default_pw_hash   = hashlib.sha256('admin123'.encode()).hexdigest()
-    ADMIN_PASSWORD_HASH= os.environ.get('ADMIN_PASSWORD_HASH', _default_pw_hash)
+    # Use `or` so an empty string env var falls back to the default hash
+    ADMIN_PASSWORD_HASH= os.environ.get('ADMIN_PASSWORD_HASH') or _default_pw_hash
 
     # ── Retraining defaults ────────────────────────────────────────────────────
     RETRAIN_DEFAULTS = {
