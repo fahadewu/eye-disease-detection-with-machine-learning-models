@@ -31,41 +31,15 @@ pip install \
     --quiet
 echo "  Core deps installed."
 
-# ── 3. Install TensorFlow ────────────────────────────────────────────────────
-echo "[3/4] Installing TensorFlow..."
-PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
-PYTHON_MAJOR=$(python -c "import sys; print(sys.version_info.major)")
-
-# Detect available memory (Render exports RENDER_INSTANCE_TYPE or check /proc)
-AVAILABLE_RAM_MB=0
-if [ -f /proc/meminfo ]; then
-    AVAILABLE_RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
-fi
-
-echo "  Detected RAM: ${AVAILABLE_RAM_MB} MB"
-echo "  Python: ${PYTHON_MAJOR}.${PYTHON_MINOR}"
-
-if [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -ge 9 ] && [ "$PYTHON_MINOR" -le 12 ]; then
-    # Try tensorflow-cpu (smaller than full TF, no GPU driver needed on Render)
-    echo "  Attempting tensorflow-cpu install..."
-    if pip install "tensorflow-cpu>=2.13.0" --quiet 2>/dev/null; then
-        TF_VERSION=$(python -c "import tensorflow as tf; print(tf.__version__)" 2>/dev/null || echo "unknown")
-        echo "  tensorflow-cpu ${TF_VERSION} installed."
-    else
-        # Fallback to full tensorflow
-        echo "  tensorflow-cpu unavailable, trying tensorflow..."
-        if pip install "tensorflow>=2.13.0" --quiet 2>/dev/null; then
-            TF_VERSION=$(python -c "import tensorflow as tf; print(tf.__version__)" 2>/dev/null || echo "unknown")
-            echo "  tensorflow ${TF_VERSION} installed."
-        else
-            echo "  WARNING: TensorFlow could not be installed."
-            echo "  The app will run using Hugging Face / Gemini API fallback."
-            echo "  Configure API keys in Admin -> Settings after deployment."
-        fi
-    fi
+# ── 3. TensorFlow (now declared in requirements.txt — skip redundant install) ──
+echo "[3/4] Verifying TensorFlow..."
+TF_VERSION=$(python -c "import tensorflow as tf; print(tf.__version__)" 2>/dev/null || echo "")
+if [ -n "$TF_VERSION" ]; then
+    echo "  tensorflow ${TF_VERSION} ready."
 else
-    echo "  Python ${PYTHON_MAJOR}.${PYTHON_MINOR} not supported by TensorFlow."
-    echo "  The app will run in API-fallback-only mode."
+    echo "  WARNING: TensorFlow import failed after pip install."
+    echo "  App will run using Hugging Face / Gemini API fallback."
+    echo "  Check that tensorflow-cpu is listed in requirements.txt."
 fi
 
 # ── 4. Pull Git LFS model files ─────────────────────────────────────────────
